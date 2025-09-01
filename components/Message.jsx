@@ -1,9 +1,20 @@
 import Image from "next/image";
-import React from "react";
+import React, { use } from "react";
 import { assets } from "@/assets/assets";
-
+import Markdown from "react-markdown";
+import Prism from "prismjs";
+import { useEffect } from "react";
+import { toast } from "react-hot-toast";
 
 const Message = ({ role, content }) => {
+  useEffect(() => {
+    Prism.highlightAll();
+  }, [content]);
+
+  const copyMessage = () => {
+    navigator.clipboard.writeText(content);
+    toast.success("Message copied to clipboard");
+  };
   return (
     <div className="flex flex-col items-center w-full max-w-3xl text-sm">
       {/* Wrapper for each message */}
@@ -15,20 +26,18 @@ const Message = ({ role, content }) => {
         {/* Chat bubble */}
         <div
           className={`group relative flex max-w-2xl py-3 rounded-xl ${
-            role === "user"
-              ? "bg-[#414158] px-5 text-white"
-              : "bg-gray-200 gap-3 text-black"
+            role === "user" ? "bg-[#414158] px-5" : "gap-3"
           }`}
         >
           <div
-            className={`opacity-0 group-hover:opacity-100 absolute transition-all ${
+            className={`opacity-0 group-hover:opacity-100 absolute ${
               role === "user" ? "-left-16 top-2.5" : "left-9 bottom-6"
-            }`}
+            } transition-all`}
           >
             <div className="flex items-center gap-2 opacity-70">
               {role === "user" ? (
                 <>
-                  <Image
+                  <Image onClick={copyMessage}
                     className="w-4 cursor-pointer"
                     src={assets.copy_icon}
                     alt=""
@@ -41,8 +50,8 @@ const Message = ({ role, content }) => {
                   />
                 </>
               ) : (
-                <>
-                  <Image
+                <div className="opacity-0 group-hover:opacity-100 absolute left-4 top-7 flex items-center gap-2">
+                  <Image onClick={copyMessage}
                     className="w-4.5 cursor-pointer"
                     src={assets.copy_icon}
                     alt=""
@@ -65,7 +74,7 @@ const Message = ({ role, content }) => {
                     src={assets.dislike_icon}
                     alt=""
                   />
-                </>
+                </div>
               )}
             </div>
           </div>
@@ -79,7 +88,9 @@ const Message = ({ role, content }) => {
                 className="h-9 w-9 p-1
                     border border-white/15 rounded-full"
               />
-              <div className="space-y-4 w-full overflow-scroll">{content}</div>
+              <div className="space-y-4 w-full overflow-scroll">
+                <Markdown>{content}</Markdown>
+              </div>
             </>
           )}
         </div>

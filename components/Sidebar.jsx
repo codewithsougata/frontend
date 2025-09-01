@@ -1,16 +1,32 @@
 import { assets } from "@/assets/assets";
 import Image from "next/image";
 import { useClerk, UserButton } from "@clerk/nextjs";
-import { useAppContext} from "@/context/AppContext";
+import { useAppContext } from "@/context/AppContext";
 import ChatLabel from "./ChatLabel";
 import { useState } from "react";
-
+import axios from "axios";
+import { toast } from "react-hot-toast";
 
 const Sidebar = ({ expand, setExpand }) => {
-  // 👇 yaha hona chahiye
   const { openSignIn } = useClerk();
-  const { user } = useAppContext();
-  const { openMenu,setOpenMenu  } = useState({id:0, open:false});
+  const { user, chats, fetchUsersChats, setSelectedChat } = useAppContext();
+  const [openMenu, setOpenMenu] = useState({ id: 0, open: false });
+
+  // ✅ Create new chat and save to DB immediately
+  const createNewChat = async () => {
+    try {
+      const { data } = await axios.post("/api/chat/create");
+      if (data.success) {
+        toast.success("New chat created");
+        fetchUsersChats(); // refresh sidebar list
+        setSelectedChat(data.chat); // set newly created chat as active
+      } else {
+        toast.error(data.message);
+      }
+    } catch (error) {
+      toast.error("Failed to create chat");
+    }
+  };
 
   return (
     <div
@@ -68,6 +84,7 @@ const Sidebar = ({ expand, setExpand }) => {
 
         {/* New Chat Button */}
         <button
+          onClick={createNewChat}
           className={`mt-8 flex items-center justify-center cursor-pointer transition-all ${
             expand
               ? "bg-primary hover:opacity-90 rounded-2xl gap-2 p-2.5 w-full"
@@ -79,28 +96,35 @@ const Sidebar = ({ expand, setExpand }) => {
             src={expand ? assets.chat_icon : assets.chat_icon_dull}
             alt="chat"
           />
-
-          {!expand && (
-            <div className="absolute w-max -top-12 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition bg-black text-white text-sm px-3 py-2 rounded-lg shadow-lg pointer-events-none">
-              New chat
-              <div className="w-3 h-3 absolute bg-black rotate-45 left-1/2 -translate-x-1/2 -bottom-1.5"></div>
-            </div>
-          )}
+          <div className="absolute w-max -top-12 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition bg-black text-white text-sm px-3 py-2 rounded-lg shadow-lg pointer-events-none">
+            New chat
+            <div className="w-3 h-3 absolute bg-black rotate-45 left-1/2 -translate-x-1/2 -bottom-1.5"></div>
+          </div>
 
           {expand && <p className="text-white font-medium">New chat</p>}
         </button>
 
+        {/* Recent Chats */}
         <div
           className={`mt-8 text-white/25 text-sm ${
             expand ? "block" : "hidden"
           }`}
         >
           <p className="my-1">Recents</p>
-          <ChatLabel openMenu={openMenu} setOpenMenu={setOpenMenu} />
+          {chats.map((chat, index) => (
+            <ChatLabel
+              key={chat._id || index}
+              name={chat.name}
+              id={chat._id}
+              openMenu={openMenu}
+              setOpenMenu={setOpenMenu}
+            />
+          ))}
         </div>
       </div>
 
       <div>
+        {/* Get App */}
         <div
           className={`flex items-center cursor-pointer group relative transition-all ${
             expand
@@ -140,20 +164,18 @@ const Sidebar = ({ expand, setExpand }) => {
           )}
         </div>
 
+        {/* User / Profile */}
         <div
           onClick={user ? null : openSignIn}
           className={`flex items-center ${
-            expand
-              ? "hover:bg-white/10 rounded-lg"
-              : "justify-center w-full"
+            expand ? "hover:bg-white/10 rounded-lg" : "justify-center w-full"
           } gap-3 text-white/60 text-sm p-2 mt-2 cursor-pointer`}
         >
-
-          {
-            user ? <UserButton/>
-             : <Image src={assets.profile_icon} alt="" className="w-7" />
-          }
-
+          {user ? (
+            <UserButton />
+          ) : (
+            <Image src={assets.profile_icon} alt="" className="w-7" />
+          )}
           {expand && <span>My Profile</span>}
         </div>
       </div>
